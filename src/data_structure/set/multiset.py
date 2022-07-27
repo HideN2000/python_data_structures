@@ -113,14 +113,12 @@ class MultiSet(Generic[T]):
     def find(self, x: T) -> bool:
         '''return (if x in set) in O(log)'''
         ptr, op = self._root, self._op
-        while ptr != self._nil:
+        while ptr != self._nil and ptr.value != x:
             if op(x, ptr.value):
-                if ptr.value == x:
-                    return True
                 ptr = ptr._left
             else:
                 ptr = ptr._right
-        return False
+        return ptr.value == x
 
     @property
     def min(self) -> T:
