@@ -1,11 +1,12 @@
 #-*- coding: utf-8 -*-
+from src.data_structure.set.multiset import MultiSet
 import os
 import pytest
 import random
 from string import ascii_lowercase
 from typing import Tuple, List
-
-from src.data_structure.set.multiset import MultiSet
+import sys
+sys.setrecursionlimit(200000)
 
 
 @pytest.mark.xfail()
@@ -151,6 +152,33 @@ class TestRandom():
         #randomize_delete_order
         delete_order = [i for i in range(size)]
         random.shuffle(delete_order)
+
+        for x in delete_order:
+            S.delete(x)
+
+        assert S.empty
+
+    @pytest.mark.large
+    @pytest.mark.parametrize('size', [10000, 20000, 50000])
+    def test_random_same_value(self, size: int) -> None:
+        '''test: large random same input(FAILED)
+            >> 謎recursion Errorで落ちる(要修正)
+        '''
+
+        S: MultiSet[int] = MultiSet[int](
+            operator=lambda x, y: x < y, init_e=-1)
+
+        #insert_same_value_multiple_times
+        insert_order = [1 for i in range(size)]
+
+        for x in insert_order:
+            S.insert(x)
+
+        #check if sorted
+        assert [x for x in S] == [1 for i in range(size)]
+
+        #delete_same_value_multiple_times
+        delete_order = [1 for i in range(size)]
 
         for x in delete_order:
             S.delete(x)
