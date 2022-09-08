@@ -8,7 +8,6 @@ T = TypeVar('T')
 U = TypeVar('U')
 
 
-@dataclass
 class TreeNode(Generic[U]):
     #BLACK = 0, RED = 1
     value: U
@@ -17,6 +16,12 @@ class TreeNode(Generic[U]):
     _right: Any = None
     _subtree_size: int = 1
     _color: bool = False
+
+    def __init__(self, value: U) -> None:
+        self.value = value
+        self._par = self._left = self._right = None
+        self._subtree_size = 1
+        self._color = False  # BLACK
 
 
 @dataclass
