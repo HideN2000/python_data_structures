@@ -21,7 +21,7 @@ def test_ill_defined_op() -> None:
     random.shuffle(insert_order)
 
     for x in S:
-        S.insert(x)
+        S.add(x)
 
     #not sorted because of ill-defined operator
     assert [x for x in S] == [i for i in range(size)]
@@ -39,18 +39,17 @@ def test_example() -> None:
 
     #insert
     for x in insert_order:
-        S.insert(x)
+        S.add(x)
 
     #test basic attribute
-    assert S.size == S.max == 5
+    assert len(S) == S.max == 5
     assert S.min == 1
     assert [x for x in S] == [i for i in range(1, 5 + 1)]
 
     #delete
     for x in delete_order:
-        S.delete(x)
+        S.remove(x)
 
-    assert S.empty
     assert S.min == S.max == S.e
 
 
@@ -66,24 +65,24 @@ def test_kth_element() -> None:
     random.shuffle(insert_order)
 
     for x in insert_order:
-        S.insert(x)
+        S.add(x)
         S_elements = sorted(S_elements + [x])
-        assert S.size == len(S_elements)
+        assert len(S) == len(S_elements)
         #test kth element
-        for i in range(S.size):
-            assert S.kth_element(i + 1) == S_elements[i]
+        for i in range(len(S)):
+            assert S[i] == S_elements[i]
 
     #randomized_delete_order
     delete_order = [i for i in range(size)]
     random.shuffle(delete_order)
     for x in delete_order:
-        S.delete(x)
+        S.remove(x)
         S_elements.remove(x)
         S_elements.sort()
-        assert S.size == len(S_elements)
+        assert len(S) == len(S_elements)
         #test kth element
-        for i in range(S.size):
-            assert S.kth_element(i + 1) == S_elements[i]
+        for i in range(len(S)):
+            assert S[i] == S_elements[i]
 
 
 @pytest.mark.small
@@ -94,14 +93,14 @@ def test_delete_non_exisent() -> None:
         operator=lambda x, y: x <= y, init_e=(1 << 60, 'nil'))
 
     for i, char in enumerate(ascii_lowercase):
-        S.insert((i, char))
+        S.add((i, char))
 
     for i, char in enumerate(ascii_lowercase):
-        S.delete((i, char))
+        S.add((i, char))
 
     #remove from empty S
     with pytest.raises(AssertionError):
-        S.delete((-1, 'non-existent-element'))
+        S.remove((-1, 'non-existent-element'))
 
 
 class TestRandom():
@@ -117,7 +116,7 @@ class TestRandom():
         random.shuffle(insert_order)
 
         for x in insert_order:
-            S.insert(x)
+            S.add(x)
 
         #check if sorted
         assert [x for x in S] == [i for i in range(size)]
@@ -127,9 +126,9 @@ class TestRandom():
         random.shuffle(delete_order)
 
         for x in delete_order:
-            S.delete(x)
+            S.remove(x)
 
-        assert S.empty
+        assert not S
 
     @pytest.mark.large
     @pytest.mark.parametrize('size', [10000, 20000, 50000, 100000])
@@ -144,7 +143,7 @@ class TestRandom():
         random.shuffle(insert_order)
 
         for x in insert_order:
-            S.insert(x)
+            S.add(x)
 
         #check if sorted
         assert [x for x in S] == [i for i in range(size)]
@@ -154,16 +153,14 @@ class TestRandom():
         random.shuffle(delete_order)
 
         for x in delete_order:
-            S.delete(x)
+            S.remove(x)
 
-        assert S.empty
+        assert not S
 
     @pytest.mark.large
     @pytest.mark.parametrize('size', [10000, 20000, 50000])
     def test_random_same_value(self, size: int) -> None:
-        '''test: large random same input(FAILED)
-            >> 謎recursion Errorで落ちる(要修正)
-        '''
+        '''test: large random same input(FIXED)'''
 
         S: MultiSet[int] = MultiSet[int](
             operator=lambda x, y: x < y, init_e=-1)
@@ -172,7 +169,7 @@ class TestRandom():
         insert_order = [1 for i in range(size)]
 
         for x in insert_order:
-            S.insert(x)
+            S.add(x)
 
         #check if sorted
         assert [x for x in S] == [1 for i in range(size)]
@@ -181,6 +178,6 @@ class TestRandom():
         delete_order = [1 for i in range(size)]
 
         for x in delete_order:
-            S.delete(x)
+            S.remove(x)
 
-        assert S.empty
+        assert not S

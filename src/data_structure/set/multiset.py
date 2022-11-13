@@ -58,7 +58,7 @@ class MultiSet(Generic[T]):
     _size: int = 0
 
     def __post_init__(self, operator: Callable[[T, T], bool], init_e: T) -> None:
-        self._op = operator
+        self._op = (operator if operator(init_e, init_e) else lambda x, y: not operator(y, x))
         self._nilval = init_e
 
         self._nil = TreeNode[T](self._nilval)
@@ -66,6 +66,26 @@ class MultiSet(Generic[T]):
 
         self._root = self._nil
         self._root._par = self._root._left = self._root._right = self._nil
+
+    def __bool__(self) -> bool:
+        return self._size > 0
+
+    def __contains__(self, x : T) -> bool:
+        ptr, op = self._root, self._op
+        while ptr != self._nil and ptr.value != x:
+            if op(x, ptr.value):
+                ptr = ptr._left
+            else:
+                ptr = ptr._right
+        return ptr.value == x
+
+    def __getitem__(self, k: int) -> T:
+        assert type(k) == int
+        if k < 0:
+            k += self._size
+        if k < 0 or k >= self._size:
+            raise IndexError
+        return self.__kth_element(k + 1)
 
     def __iter__(self) -> Generator[T, None, None]:
         if self._size == 0:
@@ -82,29 +102,8 @@ class MultiSet(Generic[T]):
                     que.append((ur, False))
                 yield u.value
 
-    def __getitem__(self, k: int) -> T:
-        #return S[k] := k-th smallest element
-        assert type(k) == int
-        if k < 0:
-            k += self._size
-        if k < 0 or k >= self._size:
-            raise IndexError
-        return self.kth_element(k + 1)
-
-    @property
-    def e(self) -> T:
-        '''return init_e in O(1)'''
-        return self._nilval
-
-    @property
-    def size(self) -> int:
-        '''return set size in O(1)'''
+    def __len__(self) -> int:
         return self._size
-
-    @property
-    def empty(self) -> bool:
-        '''return set is empty in O(1)'''
-        return self._size == 0
 
     def __find_address(self, val: T) -> TreeNode[T]:
         ptr, op = self._root, self._op
@@ -115,52 +114,35 @@ class MultiSet(Generic[T]):
                 ptr = ptr._right
         return ptr
 
-    def find(self, x: T) -> bool:
-        '''return (if x in set) in O(log)'''
-        ptr, op = self._root, self._op
-        while ptr != self._nil and ptr.value != x:
-            if op(x, ptr.value):
-                ptr = ptr._left
-            else:
-                ptr = ptr._right
-        return ptr.value == x
-
     @property
-    def min(self) -> T:
-        '''return min-element in O(log)'''
-        ptr = self._root
-        while (pl := ptr._left) != self._nil:
-            ptr = pl
-        return ptr.value
+    def e(self) -> T:
+        '''init_e in O(1)'''
+        return self._nilval
 
     @property
     def max(self) -> T:
-        '''return max-element in O(log)'''
+        '''max-element in O(log)'''
         ptr = self._root
         while (pr := ptr._right) != self._nil:
             ptr = pr
         return ptr.value
 
-    def kth_element(self, k: int) -> T:
-        '''return k-th(1-indexed) smallest element in O(log)'''
-        assert type(k) == int
-        assert 1 <= k <= self._size, IndexError
+    @property
+    def min(self) -> T:
+        '''min-element in O(log)'''
         ptr = self._root
+        while (pl := ptr._left) != self._nil:
+            ptr = pl
+        return ptr.value
 
-        while ptr != self._nil:
-            lsize = ptr._left._subtree_size + 1
-            if k == lsize:
-                return ptr.value
-            elif k < lsize:
-                ptr = ptr._left
-            else:
-                k -= lsize
-                ptr = ptr._right
-        raise NotImplementedError
-        #IMPLEMENT ERROR
+    def clear(self) -> None:
+        '''clear the MultiSet in O(1)'''
+        self._root = self._nil
+        self._size = self._root._subtree_size
+        self._root._par = self._root._left = self._root._right = self._nil
 
-    def count_less_than(self, x: T) -> int:
-        '''return the number of elements between [-∞, x) in O(log)'''
+    def less_than(self, x: T) -> int:
+        '''the number of elements between [-∞, x) in O(log)'''
         if self._size == 0:
             return 0
         count, ptr, op = 0, self._root, self._op
@@ -172,14 +154,14 @@ class MultiSet(Generic[T]):
                 ptr = ptr._right
         return count
 
-    def count_range(self, left_x: T, right_x: T) -> int:
-        '''return the number of X between [left_x, right_x) in O(log)'''
+    def between(self, left_x: T, right_x: T) -> int:
+        '''the number of elements between [left_x, right_x) in O(log)'''
         if not self._op(left_x, right_x):
             return 0
-        return self.count_less_than(right_x) - self.count_less_than(left_x)
+        return self.less_than(right_x) - self.less_than(left_x)
 
     def prev_element(self, x: T) -> T:
-        ''' return the largest element which are smaller than x in O(log)
+        ''' the largest element smaller than x in O(log)
             if no such value found, return init_e
         '''
         if self._size == 0:
@@ -193,7 +175,7 @@ class MultiSet(Generic[T]):
         return retval
 
     def next_element(self, x: T) -> T:
-        ''' return the smallest element are larger than x in O(log)
+        ''' the smallest element larger than x in O(log)
             if no such value found, return init_e
         '''
         if self._size == 0:
@@ -206,8 +188,8 @@ class MultiSet(Generic[T]):
                 retval, ptr = ptr.value, ptr._left
         return retval
 
-    def insert(self, x: T) -> None:
-        '''insert (x) into set in O(log)'''
+    def add(self, x: T) -> None:
+        '''add x into set in O(log)'''
         self._size += 1
         z, y, v, op = self._root, self._nil, TreeNode[T](x), self._op
 
@@ -232,11 +214,11 @@ class MultiSet(Generic[T]):
 
         self.__fix_up_insert(v)
 
-    def delete(self, x: T) -> None:
-        '''erase (x) from set in O(log)'''
+    def remove(self, x: T) -> None:
+        '''remove x from set in O(log)'''
         z = self.__find_address(x)
 
-        assert z != self._nil, ValueError
+        assert z != self._nil, KeyError
         self._size -= 1
         y, y_original_color = z, z._color
 
@@ -280,6 +262,24 @@ class MultiSet(Generic[T]):
 
         if not y_original_color:
             self.__fix_up_delete(q)
+
+    def __kth_element(self, k: int) -> T:
+        '''return k-th(1-indexed) smallest element in O(log)'''
+        assert type(k) == int
+        assert 1 <= k <= self._size, IndexError
+        ptr = self._root
+
+        while ptr != self._nil:
+            lsize = ptr._left._subtree_size + 1
+            if k == lsize:
+                return ptr.value
+            elif k < lsize:
+                ptr = ptr._left
+            else:
+                k -= lsize
+                ptr = ptr._right
+
+        assert False # This line should be unreachable...
 
     def __rotate_left(self, x: TreeNode[T]) -> None:
         y = x._right
