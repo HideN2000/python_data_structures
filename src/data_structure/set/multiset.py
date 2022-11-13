@@ -29,24 +29,51 @@ class MultiSet(Generic[T]):
     '''
     Reference: 
         Introduction to Algorithms, Third Edition
+    ---
+    [en]
+        Python Multiset (red-black-tree.ver)
 
-    Python Multiset (red-black-tree.ver)
+        Args:
+            T        := type of element                             <ex> int, Tuple[int, str]
+            operator := comp function of T(MUST BE WELL-DEFINED!)   <ex> lambda x, y: x <= y
+            init_e   := sentinel value                              <ex> 1 << 64, (-1, 'nil')
 
-    Args:
-        T        := type of element                             <ex> int, Tuple[int, str]
-        operator := comp function of T(MUST BE WELL-DEFINED!)   <ex> lambda x, y: x <= y
-        init_e   := sentinel value                              <ex> 1 << 64, (-1, 'nil')
+        Example:
+            (1)
+                set : MultiSet[int] = MultiSet(operator=lambda x, y : x <= y, init_e=-1)
+            (2)
+                def comp(lh : Tuple[int, str], rh : Tuple[int, str]) -> bool:
+                    if lh[0] != rh[0]:
+                        return lh[0] < rh[0]
+                    return lh[1] < rh[1]
+                
+                set : MultiSet[Tuple[int, str]] = MultiSet(operator=comp, init_e=(-1, 'nil'))
+        Note:
+            ・operator must be WELL-DEFINED (otherwise UNDEFINED)
+            ・init_e must not be added.
+    ---
+    [ja]
+        Pythonにおける順序付き集合 (赤黒木による実装)
 
-    Example:
-        (1)
-            set : MultiSet[int] = MultiSet(operator = lambda x, y : x <= y, init_e = -1)
-        (2)
-            def comp(lh : Tuple[int, str], rh : Tuple[int, str]) -> bool:
-                if lh[0] != rh[0]:
-                    return lh[0] < rh[0]
-                return lh[1] < rh[1]
-            
-            set : MultiSet[Tuple[int, str]] = MultiSet(operator = comp, init_e = (-1, 'nil'))
+        パラメータ:
+            T        := 順序付きsetで取り扱うオブジェクトの型.            <例> int, Tuple[int, str]
+            operator := オブジェクトの比較オペレータ.WELL-DEFINEDを要請   <例> lambda x, y: x <= y
+            init_e   := 番兵値(nil値の代わりに用いられる).               <例> 1 << 64, (-1, 'nil')
+
+        使用例:
+            (1)
+                set : MultiSet[int] = MultiSet(operator=lambda x, y : x <= y, init_e=-1)
+            (2)
+                def comp(lh : Tuple[int, str], rh : Tuple[int, str]) -> bool:
+                    if lh[0] != rh[0]:
+                        return lh[0] < rh[0]
+                    return lh[1] < rh[1]
+                
+                set : MultiSet[Tuple[int, str]] = MultiSet(operator=comp, init_e=(-1, 'nil'))
+
+        注意:
+            ・operator がWELL-DEFINEDでない場合の動作は未定義.
+            ・init_e が要素として追加されることがあってはいけない.
     '''
     operator: InitVar[Callable[[T, T], bool]]
     init_e: InitVar[T]
@@ -58,7 +85,8 @@ class MultiSet(Generic[T]):
     _size: int = 0
 
     def __post_init__(self, operator: Callable[[T, T], bool], init_e: T) -> None:
-        self._op = (operator if operator(init_e, init_e) else lambda x, y: not operator(y, x))
+        self._op = (operator if operator(init_e, init_e)
+                    else lambda x, y: not operator(y, x))
         self._nilval = init_e
 
         self._nil = TreeNode[T](self._nilval)
@@ -70,7 +98,7 @@ class MultiSet(Generic[T]):
     def __bool__(self) -> bool:
         return self._size > 0
 
-    def __contains__(self, x : T) -> bool:
+    def __contains__(self, x: T) -> bool:
         ptr, op = self._root, self._op
         while ptr != self._nil and ptr.value != x:
             if op(x, ptr.value):
@@ -279,7 +307,7 @@ class MultiSet(Generic[T]):
                 k -= lsize
                 ptr = ptr._right
 
-        assert False # This line should be unreachable...
+        assert False  # This line should be unreachable...
 
     def __rotate_left(self, x: TreeNode[T]) -> None:
         y = x._right
