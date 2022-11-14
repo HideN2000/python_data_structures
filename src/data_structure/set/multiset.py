@@ -8,17 +8,17 @@ T = TypeVar('T')
 U = TypeVar('U')
 
 
-class TreeNode(Generic[U]):
+class Iterator(Generic[U]):
     #BLACK = 0, RED = 1
-    value: U
+    key: U
     _par: Any = None
     _left: Any = None
     _right: Any = None
     _subtree_size: int = 1
     _color: bool = False
 
-    def __init__(self, value: U) -> None:
-        self.value = value
+    def __init__(self, key: U) -> None:
+        self.key = key
         self._par = self._left = self._right = None
         self._subtree_size = 1
         self._color = False  # BLACK
@@ -36,7 +36,7 @@ class MultiSet(Generic[T]):
         Args:
             T        := type of element                             <ex> int, Tuple[int, str]
             operator := comp function of T(MUST BE WELL-DEFINED!)   <ex> lambda x, y: x <= y
-            init_e   := sentinel value                              <ex> 1 << 64, (-1, 'nil')
+            init_e   := sentinel key                              <ex> 1 << 64, (-1, 'nil')
 
         Example:
             (1)
@@ -78,8 +78,8 @@ class MultiSet(Generic[T]):
     operator: InitVar[Callable[[T, T], bool]]
     init_e: InitVar[T]
 
-    _root: TreeNode[T] = field(init=False)
-    _nil: TreeNode[T] = field(init=False)
+    _root: Iterator[T] = field(init=False)
+    _nil: Iterator[T] = field(init=False)
     _nilval: T = field(init=False)
     _op: Callable[[T, T], bool] = field(init=False)
     _size: int = 0
@@ -89,7 +89,7 @@ class MultiSet(Generic[T]):
                     else lambda x, y: not operator(y, x))
         self._nilval = init_e
 
-        self._nil = TreeNode[T](self._nilval)
+        self._nil = Iterator[T](self._nilval)
         self._nil._subtree_size = 0
 
         self._root = self._nil
@@ -100,12 +100,12 @@ class MultiSet(Generic[T]):
 
     def __contains__(self, x: T) -> bool:
         ptr, op = self._root, self._op
-        while ptr != self._nil and ptr.value != x:
-            if op(x, ptr.value):
+        while ptr != self._nil and ptr.key != x:
+            if op(x, ptr.key):
                 ptr = ptr._left
             else:
                 ptr = ptr._right
-        return ptr.value == x
+        return ptr.key == x
 
     def __getitem__(self, k: int) -> T:
         assert type(k) == int
@@ -128,7 +128,7 @@ class MultiSet(Generic[T]):
             else:
                 if (ur := u._right) != self._nil:
                     que.append((ur, False))
-                yield u.value
+                yield u.key
 
     def __len__(self) -> int:
         return self._size
@@ -144,7 +144,7 @@ class MultiSet(Generic[T]):
         ptr = self._root
         while (pr := ptr._right) != self._nil:
             ptr = pr
-        return ptr.value
+        return ptr.key
 
     @property
     def min(self) -> T:
@@ -152,7 +152,7 @@ class MultiSet(Generic[T]):
         ptr = self._root
         while (pl := ptr._left) != self._nil:
             ptr = pl
-        return ptr.value
+        return ptr.key
 
     def clear(self) -> None:
         '''clear the MultiSet in O(1)'''
@@ -160,11 +160,11 @@ class MultiSet(Generic[T]):
         self._size = self._root._subtree_size
         self._root._par = self._root._left = self._root._right = self._nil
 
-    def find_address(self, val: T) -> TreeNode[T]:
-        '''the treenode of given val in O(log)'''
+    def find_address(self, val: T) -> Iterator[T]:
+        '''the Iterator of given val in O(log)'''
         ptr, op = self._root, self._op
-        while ptr != self._nil and val != ptr.value:
-            if op(val, ptr.value):
+        while ptr != self._nil and val != ptr.key:
+            if op(val, ptr.key):
                 ptr = ptr._left
             else:
                 ptr = ptr._right
@@ -176,7 +176,7 @@ class MultiSet(Generic[T]):
             return 0
         count, ptr, op = 0, self._root, self._op
         while ptr != self._nil:
-            if op(x, ptr.value):
+            if op(x, ptr.key):
                 ptr = ptr._left
             else:
                 count += 1 + ptr._left._subtree_size
@@ -191,41 +191,41 @@ class MultiSet(Generic[T]):
 
     def prev_element(self, x: T) -> T:
         ''' the largest element smaller than x in O(log)
-            if no such value found, return init_e
+            if no such key found, return init_e
         '''
         if self._size == 0:
             return self._nilval
         ptr, retval, op = self._root, self._nilval, self._op
         while ptr != self._nil:
-            if op(x, ptr.value):
+            if op(x, ptr.key):
                 ptr = ptr._left
             else:
-                retval, ptr = ptr.value, ptr._right
+                retval, ptr = ptr.key, ptr._right
         return retval
 
     def next_element(self, x: T) -> T:
         ''' the smallest element larger than x in O(log)
-            if no such value found, return init_e
+            if no such key found, return init_e
         '''
         if self._size == 0:
             return self._nilval
         ptr, retval, op = self._root, self._nilval, self._op
         while ptr != self._nil:
-            if op(ptr.value, x):
+            if op(ptr.key, x):
                 ptr = ptr._right
             else:
-                retval, ptr = ptr.value, ptr._left
+                retval, ptr = ptr.key, ptr._left
         return retval
 
     def add(self, x: T) -> None:
         '''add x into set in O(log)'''
         self._size += 1
-        z, y, v, op = self._root, self._nil, TreeNode[T](x), self._op
+        z, y, v, op = self._root, self._nil, Iterator[T](x), self._op
 
         while z != self._nil:
             y = z
             z._subtree_size += 1
-            if not op(z.value, x):
+            if not op(z.key, x):
                 z = z._left
             else:
                 z = z._right
@@ -234,7 +234,7 @@ class MultiSet(Generic[T]):
 
         if y == self._nil:
             self._root = v
-        elif not op(y.value, x):
+        elif not op(y.key, x):
             y._left = v
         else:
             y._right = v
@@ -301,7 +301,7 @@ class MultiSet(Generic[T]):
         while ptr != self._nil:
             lsize = ptr._left._subtree_size + 1
             if k == lsize:
-                return ptr.value
+                return ptr.key
             elif k < lsize:
                 ptr = ptr._left
             else:
@@ -310,7 +310,7 @@ class MultiSet(Generic[T]):
 
         assert False  # This line should be unreachable...
 
-    def __rotate_left(self, x: TreeNode[T]) -> None:
+    def __rotate_left(self, x: Iterator[T]) -> None:
         y = x._right
         x._right = y._left
         if (yl := y._left) != self._nil:
@@ -329,7 +329,7 @@ class MultiSet(Generic[T]):
         x._subtree_size = x._left._subtree_size + \
             x._right._subtree_size + 1
 
-    def __rotate_right(self, x: TreeNode[T]) -> None:
+    def __rotate_right(self, x: Iterator[T]) -> None:
         y = x._left
         x._left = y._right
         if (yr := y._right) != self._nil:
@@ -348,7 +348,7 @@ class MultiSet(Generic[T]):
         x._subtree_size = x._left._subtree_size + \
             x._right._subtree_size + 1
 
-    def __fix_up_insert(self, z: TreeNode[T]) -> None:
+    def __fix_up_insert(self, z: Iterator[T]) -> None:
 
         while (zp := z._par)._color:
 
@@ -384,7 +384,7 @@ class MultiSet(Generic[T]):
 
         self._root._color = False
 
-    def __transplant(self, u: TreeNode[T], v: TreeNode[T]) -> None:
+    def __transplant(self, u: Iterator[T], v: Iterator[T]) -> None:
         if (up := u._par) == self._nil:
             self._root = v
         elif u == up._left:
@@ -393,7 +393,7 @@ class MultiSet(Generic[T]):
             up._right = v
         v._par = up
 
-    def __fix_up_delete(self, x: TreeNode[T]) -> None:
+    def __fix_up_delete(self, x: Iterator[T]) -> None:
         while x != self._root and not x._color:
             if x == (xp := x._par)._left:
                 w = xp._right

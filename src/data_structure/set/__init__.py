@@ -1,1 +1,1 @@
-from .multiset import MultiSet
+from .multiset import MultiSet, Iterator
