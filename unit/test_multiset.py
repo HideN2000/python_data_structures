@@ -1,5 +1,4 @@
 #-*- coding: utf-8 -*-
-from src.data_structure.set.multiset import MultiSet
 import os
 import pytest
 import random
@@ -8,6 +7,7 @@ from typing import Tuple, List
 import sys
 sys.setrecursionlimit(200000)
 
+from src.data_structure.set import MultiSet
 
 @pytest.mark.xfail()
 def test_ill_defined_op() -> None:

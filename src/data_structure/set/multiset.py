@@ -133,15 +133,6 @@ class MultiSet(Generic[T]):
     def __len__(self) -> int:
         return self._size
 
-    def __find_address(self, val: T) -> TreeNode[T]:
-        ptr, op = self._root, self._op
-        while ptr != self._nil and val != ptr.value:
-            if op(val, ptr.value):
-                ptr = ptr._left
-            else:
-                ptr = ptr._right
-        return ptr
-
     @property
     def e(self) -> T:
         '''init_e in O(1)'''
@@ -168,6 +159,16 @@ class MultiSet(Generic[T]):
         self._root = self._nil
         self._size = self._root._subtree_size
         self._root._par = self._root._left = self._root._right = self._nil
+
+    def find_address(self, val: T) -> TreeNode[T]:
+        '''the treenode of given val in O(log)'''
+        ptr, op = self._root, self._op
+        while ptr != self._nil and val != ptr.value:
+            if op(val, ptr.value):
+                ptr = ptr._left
+            else:
+                ptr = ptr._right
+        return ptr
 
     def less_than(self, x: T) -> int:
         '''the number of elements between [-∞, x) in O(log)'''
@@ -244,7 +245,7 @@ class MultiSet(Generic[T]):
 
     def remove(self, x: T) -> None:
         '''remove x from set in O(log)'''
-        z = self.__find_address(x)
+        z = self.find_address(x)
 
         assert z != self._nil, KeyError
         self._size -= 1
